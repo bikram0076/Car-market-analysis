@@ -6,28 +6,16 @@ import seaborn as sns
 import streamlit as st
 import plotly.express as px
 
-# ------------------------------------------------------------------
-# 1. PAGE SETUP
-# ------------------------------------------------------------------
 st.set_page_config(
     page_title="Car Market Intelligence Dashboard",
     layout="wide",
 )
-
-# ------------------------------------------------------------------
-# 2. SIMPLE COLORS
-# We use just a few plain colors everywhere instead of a fancy theme.
-# ------------------------------------------------------------------
-NAVY = "#003049"     # used for titles and main bars
-RED = "#D62828"      # used as an accent color
+NAVY = "#003049"  
+RED = "#D62828"     
 PALETTE = [NAVY, RED, "#F77F00", "#4B3F72", "#2A9D8F"]
 
 sns.set_theme(style="whitegrid")
-# ------------------------------------------------------------------
-# 1.5. CUSTOM CSS FOR A COLORED DASHBOARD UI
-# Injected to color the sidebar, background, and metrics 
-# without changing any of the underlying data science logic.
-# ------------------------------------------------------------------
+
 st.markdown("""
 <style>
     /* Light background for the main canvas */
@@ -78,10 +66,6 @@ def clean_axes(ax):
     ax.spines["right"].set_visible(False)
     return ax
 
-
-# ------------------------------------------------------------------
-# 3. LOAD DATA
-# ------------------------------------------------------------------
 DATA_PATH = "Cleaned_Car_Market_Dataset.csv"
 
 
@@ -90,23 +74,21 @@ def load_data(path):
     df = pd.read_csv(path)
     df.columns = [c.strip() for c in df.columns]
 
-    # Remove extra spaces from text columns
     text_cols = df.select_dtypes(include="object").columns
     for col in text_cols:
         df[col] = df[col].astype(str).str.strip()
 
-    # Pull the number out of "8.7 L / 100 km" -> 8.7
+
     if "FuelConsumption" in df.columns:
         df["FuelConsumption_num"] = df["FuelConsumption"].str.extract(r"([\d.]+)").astype(float)
 
-    # How old is the car compared to the newest year in the dataset
     if "Year" in df.columns:
         df["CarAge"] = df["Year"].max() - df["Year"]
 
     return df
 
 
-# Try to load the file. If it isn't found, let the user upload it.
+
 try:
     raw_df = load_data(DATA_PATH)
 except FileNotFoundError:
@@ -116,9 +98,7 @@ except FileNotFoundError:
         st.stop()
     raw_df = load_data(uploaded_file)
 
-# ------------------------------------------------------------------
-# 4. SIDEBAR: NAVIGATION + FILTERS
-# ------------------------------------------------------------------
+
 st.sidebar.title("Car Market Dashboard")
 
 page = st.sidebar.radio(
@@ -143,7 +123,6 @@ sel_price = st.sidebar.slider("Price Range (AUD)", price_min, price_max, (price_
 if st.sidebar.button("Reset Filters"):
     st.rerun()
 
-# Apply the filters chosen above. If a filter list is empty, we skip it (show everything).
 df = raw_df.copy()
 
 if sel_brands:
@@ -169,9 +148,6 @@ def money(x):
     return f"${x:,.0f}"
 
 
-# ==================================================================
-# PAGE: HOME
-# ==================================================================
 if page == "Home":
     st.title("🚗 Car Market Intelligence Dashboard")
     st.write(
@@ -229,9 +205,7 @@ if page == "Home":
         f"most common body style is **{df['BodyType'].value_counts().idxmax()}**."
     )
 
-# ==================================================================
-# PAGE: OVERVIEW
-# ==================================================================
+
 elif page == "Overview":
     st.header("Dataset Overview")
     st.caption("Structure, data quality, and category-level distributions")
@@ -276,7 +250,7 @@ elif page == "Overview":
         st.pyplot(fig)
 
     with r1c2:
-        # Sunburst chart: shows Brand -> Body Type in one picture
+    
         top_brand_list = df["Brand"].value_counts().head(8).index
         sunburst_df = df[df["Brand"].isin(top_brand_list)]
         fig = px.sunburst(
@@ -307,9 +281,6 @@ elif page == "Overview":
         f"and **{df['UsedOrNew'].value_counts().idxmax()}** vehicles make up most of the listings."
     )
 
-# ==================================================================
-# PAGE: PRICE
-# ==================================================================
 elif page == "Price":
     st.header("Price Analysis")
     st.caption("Distributions and trends behind vehicle pricing")
@@ -376,9 +347,7 @@ elif page == "Price":
         f"**{top_brand_name}** has the highest average price in the current selection."
     )
 
-# ==================================================================
-# PAGE: CAR BODY
-# ==================================================================
+
 elif page == "Car Body":
     st.header("Car Body Analysis")
     st.caption("Body style popularity and its relationship with price")
@@ -440,9 +409,7 @@ elif page == "Car Body":
         f"highest average asking price."
     )
 
-# ==================================================================
-# PAGE: DRIVEN
-# ==================================================================
+
 elif page == "Driven":
     st.header("Driven Analysis")
     st.caption("Kilometres, drivetrains, and usage patterns")
@@ -492,9 +459,7 @@ elif page == "Driven":
         f"**{top_drive}** drivetrains have the highest average price."
     )
 
-# ==================================================================
-# PAGE: STATISTICAL
-# ==================================================================
+
 elif page == "Statistical":
     st.header("Statistical Analysis")
     st.caption("Correlations and outlier checks")
@@ -552,16 +517,12 @@ elif page == "Statistical":
         f"(correlation = {strongest_val:.2f})."
     )
 
-# ==================================================================
-# PAGE: MODELS
-# ==================================================================
 elif page == "Models":
     st.header("Car Models Analysis")
     st.caption("Rankings, comparisons, and value-for-money insights")
 
     tab1, tab2, tab3 = st.tabs(["Top Models", "Model Comparison", "Value Analysis"])
 
-    # ---------------- TAB 1: Top car models ----------------
     with tab1:
         c1, c2 = st.columns(2)
         with c1:
@@ -617,7 +578,6 @@ elif page == "Models":
             f"{money(model_df['Price'].mean())} across {len(model_df):,} listings."
         )
 
-    # ---------------- TAB 2: Model comparison ----------------
     with tab2:
         st.write("Pick two or more models to compare side-by-side.")
         default_models = df["Model"].value_counts().head(3).index.tolist()
@@ -671,7 +631,7 @@ elif page == "Models":
                 f"most affordable ({money(summary.loc[cheapest, 'Avg_Price'])})."
             )
 
-    # ---------------- TAB 3: Value analysis ----------------
+
     with tab3:
         st.write(
             "A simple value score highlights which listings offer the most car for the "
@@ -725,8 +685,5 @@ elif page == "Models":
             f"low kilometres, and newer year)."
         )
 
-# ==================================================================
-# FOOTER
-# ==================================================================
 st.markdown("---")
 st.caption("Car Market Intelligence Dashboard — built with Streamlit, Pandas, and Seaborn.")
